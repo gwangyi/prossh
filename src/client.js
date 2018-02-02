@@ -101,7 +101,7 @@ class Client extends EventEmitter {
   shell (window, options) {
     if (options === undefined) {
       options = window
-      window = false
+      window = undefined
     }
     options = options || {}
     let _Process = options.pty || window ? PtyProcess : Process

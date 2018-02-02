@@ -1,46 +1,30 @@
-import {Duplex, Readable} from 'stream'
-
-class Stream extends Duplex {
-  constructor (stdin, opt = {}) {
-    super(opt)
-    this.$stdin = stdin
-  }
-
-  _write (chunk, encoding, callback) {
-    this.$stdin.write(chunk, encoding, callback)
-  }
-
-  _read (size) {
-  }
-}
-
-class DummyReadable extends Readable {
-  _read (size) {
-  }
-}
+import {PassThrough} from 'stream'
+import es from 'event-stream'
 
 export class Process {
   constructor (client, stream) {
     this.$client = client
     this.$stream = stream
 
-    this.stream = new Stream(stream.stdin)
+    let stdout = [new PassThrough(), new PassThrough()]
+    let stderr = [new PassThrough(), new PassThrough()]
 
-    let stdout = [new DummyReadable(), this.stream]
-    let stderr = [new DummyReadable(), this.stream]
+    stdout.forEach(stream.stdout.pipe.bind(stream.stdout))
+    stderr.forEach(stream.stderr.pipe.bind(stream.stderr))
+    let commonOut = es.merge(stdout[1], stderr[1])
+    this.stream = es.duplex(stream.stdin, commonOut)
 
-    stream.stdout.on('data', data => stdout.map(strm => strm.push(data)))
-    stream.stderr.on('data', data => stderr.map(strm => strm.push(data)))
-
-    this.stdout = stream.stdout
-    this.stderr = stream.stderr
+    this.stdout = stdout[0]
+    this.stderr = stderr[0]
     this.stdin = stream.stdin
 
-    this.exitCode = new Promise((resolve, reject) => {
+    this.result = new Promise((resolve, reject) => {
       stream.on('close', (code, signalName, didCoreDump, description) => {
-        if (code !== null) { resolve(code) } else { reject(new Error(`${description} ${signalName}` + (didCoreDump ? ' (core dumped)' : ''))) }
+        resolve({code, signalName, didCoreDump, description})
       })
     })
+    this.exitCode = this.result.then(({code}) => code, err => { throw err })
+    this.exitSignal = this.result.then(({signalName}) => signalName, err => { throw err })
   }
 
   signal (signalName) {

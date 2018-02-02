@@ -13,6 +13,7 @@
   "devDependencies": {
     "@babel/core": "^7.0.0-beta.37",
     "@babel/preset-env": "^7.0.0-beta.37",
+    "babel-core": "^7.0.0-beta.3",
     "babel-eslint": "7",
     "eslint": "^4.16.0",
     "eslint-config-standard": "11.0.0-beta.0",
@@ -42,7 +43,7 @@
     }
   },
   "dependencies": {
-    "babel-core": "^7.0.0-beta.3",
+    "event-stream": "^3.3.4",
     "ssh2": "^0.5.5"
   }
 }
